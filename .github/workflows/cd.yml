@@ -11,6 +11,9 @@ jobs:
     timeout-minutes: 10
 
     steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+
       - name: Setup Maven Action
         uses: s4u/setup-maven-action@v1.13.0
         with:
@@ -19,7 +22,7 @@ jobs:
           maven-version: "3.9.6"
 
       - name: Build with Maven
-        run: mvn clean package --file pom.xml
+        run: mvn clean package -Pdeployment --file pom.xml
 
       - name: Create Maven settings.xml
         run: |
@@ -42,4 +45,4 @@ jobs:
                 </settings>" > ~/.m2/settings.xml
 
       - name: Publish package to AWS CodeArtifact
-        run: mvn deploy -DskipTests=true -Dmaven.test.skip=true --settings ~/.m2/settings.xml
+        run: mvn deploy -Pdeployment --settings ~/.m2/settings.xml --file pom.xml
