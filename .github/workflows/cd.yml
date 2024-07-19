@@ -21,20 +21,25 @@ jobs:
       - name: Build with Maven
         run: mvn clean package -DskipTests --file pom.xml
 
-      - name: Configure AWS Credentials
-        uses: aws-actions/configure-aws-credentials@v1
-        with:
-          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
-          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: eu-west-3
-
-      - name: Login to AWS CodeArtifact
-        id: login-codeartifact
+      - name: Create Maven settings.xml
         run: |
-          aws codeartifact get-authorization-token --domain ${{ secrets.DOMAIN }} --domain-owner ${{ secrets.OWNER }} --query authorizationToken --output text > token
-          echo "TOKEN=$(cat token)" >> $GITHUB_ENV
+          mkdir -p ~/.m2
+          echo "<settings>
+                  <servers>
+                    <server>
+                      <id>codeartifact</id>
+                      <username>aws</username>
+                      <password>${{ secrets.CODEARTIFACT_AUTH_TOKEN }}</password>
+                    </server>
+                  </servers>
+                  <mirrors>
+                    <mirror>
+                      <id>codeartifact</id>
+                      <mirrorOf>*</mirrorOf>
+                      <url>https://${{ secrets.DOMAIN }}-${{ secrets.OWNER }}.d.codeartifact.eu-west-3.amazonaws.com/maven/${{ secrets.REPO_NAME }}/</url>
+                    </mirror>
+                  </mirrors>
+                </settings>" > ~/.m2/settings.xml
 
       - name: Publish package to AWS CodeArtifact
-        run: |
-          aws codeartifact login --tool mvn --repository ${{ secrets.REPO_NAME }} --domain ${{ secrets.DOMAIN }} --domain-owner ${{ secrets.OWNER }}
-          mvn deploy -DrepositoryId=codeartifact -Durl=${{ secrets.CODEARTIFACT_REPOSITORY_URL }} -Daws.codeartifact.auth.token=$TOKEN
+        run: mvn deploy --settings ~/.m2/settings.xml
