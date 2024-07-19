@@ -1,4 +1,4 @@
-name: Build and Deploy
+name: cd
 
 on:
   push:
@@ -19,7 +19,7 @@ jobs:
           maven-version: "3.9.6"
 
       - name: Build with Maven
-        run: mvn -B package --file pom.xml
+        run: mvn clean package -DskipTests --file pom.xml
 
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v1
